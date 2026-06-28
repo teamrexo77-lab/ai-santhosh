@@ -1,4 +1,4 @@
-function sendMessage() {
+async function sendMessage() {
   let input = document.getElementById("user-input");
   let message = input.value.trim();
 
@@ -7,10 +7,12 @@ function sendMessage() {
   addMessage(message, "user");
   input.value = "";
 
-  setTimeout(() => {
-    let reply = getBotReply(message);
-    addMessage(reply, "bot");
-  }, 800);
+  addMessage("Typing...", "bot");
+
+  let response = await getAIResponse(message);
+
+  removeTyping();
+  addMessage(response, "bot");
 }
 
 function addMessage(text, sender) {
@@ -24,14 +26,35 @@ function addMessage(text, sender) {
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// Simple AI replies (demo logic)
-function getBotReply(input) {
-  input = input.toLowerCase();
+function removeTyping() {
+  let chatBox = document.getElementById("chat-box");
+  let messages = chatBox.getElementsByClassName("bot");
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].innerText === "Typing...") {
+      messages[i].remove();
+      break;
+    }
+  }
+}
 
-  if (input.includes("hello")) return "Hi 👋 How can I help you?";
-  if (input.includes("name")) return "I am AI SANTHOSH 🤖";
-  if (input.includes("help")) return "Sure 👍 Tell me what you need";
-  if (input.includes("bye")) return "Goodbye 👋 Have a nice day!";
+async function getAIResponse(message) {
+  const apiKey = "YOUR_OPENAI_API_KEY";
 
-  return "I'm still learning 🤖";
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: "You are a helpful AI assistant." },
+        { role: "user", content: message }
+      ]
+    })
+  });
+
+  const data = await res.json();
+  return data.choices[0].message.content;
 }
